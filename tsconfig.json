@@ -1,11 +1,17 @@
 {
-    "compilerOptions": {
-      "target": "es2015",
-      "module": "commonjs",
-      "declaration": true,
-      "outDir": "./lib",
-      "strict": true
-    },
-    "include": ["src"],
-    "exclude": ["node_modules", "**/__tests__/*"]
-  }
+  "compilerOptions": {
+    "moduleResolution": "Node",
+    "target": "ES2015",
+    "module": "CommonJS",
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "baseUrl": "./src",
+    "esModuleInterop": true
+  },
+
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
