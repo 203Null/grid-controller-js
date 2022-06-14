@@ -74,14 +74,14 @@ export default class GridController {
         if(this.outputReady() === false)
             return false;
 
-        let device_x = this.activeConfig?.canvasOrigin[0] + x;
-        let device_y = this.activeConfig?.canvasOrigin[1] + 1;
+        let device_x = this.activeConfig!.canvasOrigin[0] + x;
+        let device_y = this.activeConfig!.canvasOrigin[1] + y;
         let note = this.activeConfig?.keymap[device_y][device_x];
 
-        if(note === undefined)
+        if(note == undefined)
             return false;
 
-        this.activeOutput.sendNoteOn(note, {channels: 1, attack: index})
+        this.activeOutput!.sendNoteOn(note, {channels: 1, attack: index})
 
         return true;
     }
