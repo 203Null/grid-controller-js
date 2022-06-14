@@ -1,5 +1,6 @@
 export interface DeviceConfig {
   name: string;
+  defaultChannel:number;
   midiNameRegex?: string;
   keymap: number[][];
   /** [Width, Height] */

@@ -9,9 +9,10 @@ export default class GridController {
     activeOutput?: Output;
     activeConfig?: DeviceConfig
 
-    static async new()
+    callback?: (arg: object) => unknown
+
+    static async start()
     {
-        let object : GridController = new GridController()
         if(WebMidi.enabled == false)
         {
             await WebMidi.enable()
@@ -19,40 +20,79 @@ export default class GridController {
                 console.error("An error was thrown by WebMidi", error);
                 });
         }
-        return object;
     }
 
     /** Returns the configuration of all the devices. */
-    static configList(): typeof DeviceConfigs
+    static configList()
     {
-        return DeviceConfigs;
+        return Object.keys(DeviceConfigs);
+    }
+
+    static addConfig(config : DeviceConfig)
+    {
+        DeviceConfigs[config.name] = config;
     }
 
     /** Returns all the available MIDI inputs. */
-    availableDeviceInputs() : Input[]
+    static availableDeviceInputs() : Input[]
     {
         return WebMidi.inputs;
     }
 
     /** Returns all the available MIDI ouputs. */
-    availableDeviceOutputs() : Output[]
+    static availableDeviceOutputs() : Output[]
     {
         return WebMidi.outputs;
     }
 
-    connect(input_device:Input|undefined, output_device:Output|undefined, config?:DeviceConfig) 
+    deviceEventHandler(e : any) // TODO Fix
+    {
+        switch(e.type)
+        {
+            case "midimessage":
+            {
+                switch(e.message.type)
+                {
+                    case "noteon":
+                    case "noteoff":
+                    {
+                        // console.log(`${e.message.type} - ${e.message.data}`)
+                        if(this.activeConfig && this.callback) //We do have a callback
+                        {
+                            let xy:[number, number] = this.activeConfig.noteToXY(e.message.data[1])
+                            this.callback({event: "key", position: xy, velocity: e.message.data[2]})
+                        }
+                        break;
+                    }
+            }
+                break;
+            }
+            case "disconnected":
+            {
+                console.log("Device disconnected")
+                break;
+            }
+            default:
+            {
+                console.log(e.type);
+            }
+        }
+    }
+
+    connect(input_device:Input|undefined, output_device:Output|undefined, config?:DeviceConfig|string) 
     {
         this.activeInput = input_device;
         this.activeOutput = output_device;
 
         if(input_device === undefined && output_device === undefined)
         {
-            this.activeConfig = config;
             console.log("Both Input and output are undefined");
-            return;
         }
-
-        this.activeInput?.addListener("midimessage", e => {console.log(e);})
+        else
+        {
+            this.activeInput?.addListener("midimessage", e => this.deviceEventHandler(e))
+            this.activeInput?.addListener("disconnected", e => this.deviceEventHandler(e))
+        }
         
         if(config === undefined) //We need to try to auto match device config
         {
@@ -113,12 +153,18 @@ export default class GridController {
                 }
             }
         }
-        else
+        else if(typeof config === "string")
+        {  
+            console.log(`DeviceConfig ${config} used`)
+            this.activeConfig = DeviceConfigs[<string>config]; 
+        }
+        else // if (typeof config === "DeviceConfig") - Does not work, let's assume it is DeviceConfig
         {
-            this.activeConfig = config;
+            console.log("DeviceConfig from parameter used")
+            this.activeConfig = <DeviceConfig>config;
         }
 
-        if(this.activeConfig == undefined)
+        if(this.activeConfig === undefined)
         {
             console.log("No active config");
         }
@@ -131,8 +177,11 @@ export default class GridController {
 
     disconenct() 
     {
+        this.activeInput?.removeListener();
+
         this.activeInput = undefined;
         this.activeOutput = undefined;
+        this.activeConfig = undefined;
     }
 
     setConfig(config:DeviceConfig) {}
@@ -153,7 +202,7 @@ export default class GridController {
         let device_y = this.activeConfig!.canvasOrigin[1] + y;
         let note = this.activeConfig!.keymap[device_y][device_x];
 
-        if(note == undefined)
+        if(note == undefined || note == NaN)
             return false;
 
         this.activeOutput!.sendNoteOn(note, {channels: 1, rawAttack: index})
@@ -165,5 +214,5 @@ export default class GridController {
 
     fillPalette(index: number, palette?: number){}
 
-    registerCallback(callback: (arg: any) => unknown) {}
+    registerCallback(callback: (arg: any) => unknown) {this.callback = callback}
 }
