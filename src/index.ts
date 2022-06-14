@@ -193,7 +193,7 @@ export default class GridController {
 
     setPixel(x: number, y: number, color: number) {}
 
-    setPixelPalette(x: number, y: number, index: number, palette?: number) 
+    setPixelPalette(x: number, y: number, index: number, channel?: number) 
     {
         if(this.outputReady() === false)
             return false;
@@ -205,14 +205,16 @@ export default class GridController {
         if(note == undefined || note == NaN)
             return false;
 
-        this.activeOutput!.sendNoteOn(note, {channels: 1, rawAttack: index})
+        if(channel == undefined) {channel = this.activeConfig?.defaultChannel}
+
+        this.activeOutput!.sendNoteOn(note, {channels: channel, rawAttack: index})
 
         return true;
     }
 
     fill(color: number){}
 
-    fillPalette(index: number, palette?: number){}
+    fillPalette(index: number, channel?: number){}
 
     registerCallback(callback: (arg: any) => unknown) {this.callback = callback}
 }
